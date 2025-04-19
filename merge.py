@@ -12,12 +12,15 @@ ph_codes = [
     "J86.9", "J96.0", "J96.9", "J98.8", "U07.1"
 ]
 
-icd_file = pd.read_csv('icd10.csv')
+icd_file = pd.read_csv('data/icd10.csv')
+icd_file['HIV_indicator_HIVteam'] = icd_file['HIV_indicator_HIVteam'].astype(int)
 
 icd_file = icd_file[icd_file['HIV_indicator_HIVteam'].isin([0, 1])]
-icd_file = icd_file[icd_file['HIV_indicator_HIVteam'].isin(ph_codes)]
+icd_file = icd_file[icd_file['icd10_code'].isin(ph_codes)]
 
-files = [f'Datauitgifte_AwareHIV_deidentified_chunk{x}.csv' for x in range(1, 4)]
+icd_file = icd_file.groupby('Pseudoniem', as_index=False)['HIV_indicator_HIVteam'].min()
+
+files = [f'data/Datauitgifte_AwareHIV_deidentified_chunk{x}.csv' for x in range(1, 4)]
 dfs = [pd.read_csv(f, index_col=0) for f in files]
 
 df = pd.concat(dfs)
@@ -34,11 +37,20 @@ result_df = df_sorted.groupby('Pseudoniem')['section_text'].apply(''.join).reset
 
 result_df['section_text'] = result_df['section_text'].apply(lambda x: re.sub(r'\n+', '\n', x))
 
-result_df['PJP'] = ''
-result_df['CAP'] = ''
+result_df['section_text'] = result_df['section_text'].str.replace(r'\\n|\\t', ' ', regex=True)
+result_df['section_text'] = result_df['section_text'].str.replace(r'\s+', ' ', regex=True)
+result_df['section_text'] = result_df['section_text'].str.strip()
 
-# result_df[['Pseudoniem', 'section_text', 'PJP', 'CAP']].to_csv("annotation_template.csv", index=False)
+pretrain_merged_text = ' '.join(result_df['section_text'])
 
-with pd.ExcelWriter('annotation_template.xlsx', engine="xlsxwriter") as writer:
-    writer.book.formats[0].set_text_wrap()  # Enable multi-line cell display
-    result_df[['Pseudoniem', 'section_text', 'PJP', 'CAP']].to_excel(writer)
+with open('pretrain_merged_text.txt', 'w') as file:
+    file.write(pretrain_merged_text)
+
+pretrained_by_patient = result_df[['Pseudoniem', 'section_text']]
+pretrained_by_patient.to_csv('pretrained_by_patient.csv')
+
+merged_df = result_df.merge(icd_file, on='Pseudoniem', how='inner')
+
+merged_df.rename(columns={'HIV_indicator_HIVteam': 'labels', 'section_text': 'text'}, inplace=True)
+
+merged_df.to_csv('dataset.csv')
