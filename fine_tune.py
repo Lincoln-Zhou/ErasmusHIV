@@ -36,7 +36,7 @@ os.path.isdir('./final') or os.makedirs('./final')
 def run(args: ClassificationArgs) -> float:
     model.args = args
 
-    seed_list = list(range(24, 35))
+    seed_list = list(range(24, 34))
     results = []
 
     for seed in seed_list:
