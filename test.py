@@ -12,6 +12,7 @@ def default_model_args():
     return ClassificationArgs(num_train_epochs=10,
                               save_model_every_epoch=False,
                               save_eval_checkpoints=False,
+                              save_steps=-1,
                               sliding_window=True,
                               stride=0.8,
                               max_seq_length=512,
