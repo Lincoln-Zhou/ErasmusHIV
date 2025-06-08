@@ -8,9 +8,9 @@ from transformers import pipeline, BitsAndBytesConfig
 
 
 def parse_gemma_output(output: str) -> int:
-    eol = output[:10]  # This number can be lower if we can guarantee the model would only say yes/no at the very end
+    eol = output.strip()[-10:]  # This number can be lower if we can guarantee the model would only say yes/no at the very end
 
-    eol = eol.lower().strip()
+    eol = eol.lower()
 
     if 'yes' in eol:
         return 1
@@ -26,7 +26,7 @@ def build_dataset(raw_dataset: str | pd.DataFrame) -> pd.DataFrame:
     if isinstance(raw_dataset, str):
         raw_dataset = pd.read_csv(raw_dataset)
 
-    ehr_texts, labels = raw_dataset['text'], raw_dataset['labels']
+    ehr_texts, labels = raw_dataset['text'], raw_dataset['flag']
 
     ehr_prompts = ehr_texts.apply(lambda x:
                                   f"""
@@ -53,7 +53,7 @@ def run(prompt: str, pipe):
         {"role": "user", "content": prompt}
     ]
 
-    output = pipe(text=messages, max_new_tokens=1024)
+    output = pipe(messages, max_new_tokens=2048)
     response = output[0]["generated_text"][-1]["content"]
 
     decision = parse_gemma_output(response)
@@ -69,7 +69,8 @@ def evaluate(dataset: str | pd.DataFrame, pipe):
 
     predictions, outputs = [], []
 
-    for prompt, _ in tqdm(dataset.iterrows()):
+    for idx, row in tqdm(dataset.iterrows()):
+        prompt = row['prompt']
         prediction, output = run(prompt, pipe)
 
         predictions.append(prediction)
@@ -93,7 +94,6 @@ def main():
         "text-generation",
         model="google/medgemma-27b-text-it",
         torch_dtype=torch.bfloat16,
-        device="cuda",
         model_kwargs={"quantization_config": BitsAndBytesConfig(load_in_8bit=True)}
     )
 
