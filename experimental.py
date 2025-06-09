@@ -4,6 +4,8 @@ from huggingface_hub import login
 from unsloth import FastLanguageModel
 from unsloth.chat_templates import get_chat_template
 
+from utilities import parse_gemma_output, build_dataset
+
 
 login(token='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')
 
@@ -30,7 +32,7 @@ def run_unsloth(prompt: str, pipe):
 
     outputs = model.generate(
         **inputs,
-        max_new_tokens=1024,
+        max_new_tokens=2048,
         temperature=1.0,
         top_k=64,
         top_p=0.95,
@@ -43,7 +45,9 @@ def run_unsloth(prompt: str, pipe):
         skip_special_tokens=True,
     )
 
-    return response
+    decision = parse_gemma_output(response)
+
+    return decision, response
 
 
 def main():

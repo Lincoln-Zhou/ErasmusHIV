@@ -5,44 +5,16 @@ from tqdm import tqdm
 
 import torch
 from transformers import pipeline, BitsAndBytesConfig
+from unsloth import FastLanguageModel
+from unsloth.chat_templates import get_chat_template
 
+import argparse
+from typing import Optional
+import os
+import time
 
-def parse_gemma_output(output: str) -> int:
-    eol = output.strip()[-10:]  # This number can be lower if we can guarantee the model would only say yes/no at the very end
-
-    eol = eol.lower()
-
-    if 'yes' in eol:
-        return 1
-    elif 'no' in eol:
-        return 0
-    else:
-        raise ValueError(f'Unrecognized output: {eol}')
-
-
-def build_dataset(raw_dataset: str | pd.DataFrame) -> pd.DataFrame:
-    # Convert raw dataset into prompt based
-
-    if isinstance(raw_dataset, str):
-        raw_dataset = pd.read_csv(raw_dataset)
-
-    ehr_texts, labels = raw_dataset['text'], raw_dataset['flag']
-
-    ehr_prompts = ehr_texts.apply(lambda x:
-                                  f"""
-    Analyze the following Dutch EHR text and determine whether HIV testing is recommended.  
-    Follow these steps:  
-    1. Analyze relevant clinical information.  
-    2. Identify any applicable indicators.  
-    3. Decide whether HIV testing is warranted. Output only "YES" or "NO".
-    
-    Text:  
-    "{x}"
-    """)
-
-    prompt_dataset = pd.DataFrame(data={'prompt': ehr_prompts, 'label': labels})
-
-    return prompt_dataset
+from experimental import run_unsloth
+from utilities import parse_gemma_output, build_dataset
 
 
 def run(prompt: str, pipe):
@@ -71,16 +43,24 @@ def evaluate(dataset: str | pd.DataFrame, pipe):
 
     for idx, row in tqdm(dataset.iterrows()):
         prompt = row['prompt']
-        prediction, output = run(prompt, pipe)
+
+        if not isinstance(pipe, tuple):
+            prediction, output = run(prompt, pipe)
+        else:
+            prediction, output = run_unsloth(prompt, pipe)
 
         predictions.append(prediction)
         outputs.append(output)
 
     predictions = np.array(predictions).astype(int)
 
-    np.save('predictions.npy', predictions)
+    # Save prediction results to unique folder for future inspections
+    save_name = f'experiment_{int(time.time())}'
+    os.makedirs(save_name, exist_ok=True)
 
-    with open('llm_outputs.txt', 'w') as file:
+    np.save(f'{save_name}/predictions.npy', predictions)
+
+    with open(f'{save_name}/llm_outputs.txt', 'w') as file:
         file.writelines('\n\n'.join(outputs))
 
     labels = dataset['label'].to_numpy().astype(int)
@@ -89,18 +69,70 @@ def evaluate(dataset: str | pd.DataFrame, pipe):
     print(f'MCC: {matthews_corrcoef(labels, predictions)}')
 
 
-def main():
-    pipe = pipeline(
-        "text-generation",
-        model="google/medgemma-27b-text-it",
-        torch_dtype=torch.bfloat16,
-        model_kwargs={"quantization_config": BitsAndBytesConfig(load_in_8bit=True)}
-    )
+def main(backend: str, bit: Optional[int], dataset: str):
+    assert backend in ['hf', 'unsloth'], 'Invalid backend specified.'
+    assert bit in [4, 8, 16], 'Invalid quantization configuration.'
 
-    dataset = build_dataset('dataset.csv')
+    dataset = build_dataset(dataset)
+
+    if backend == 'hf':
+        if bit == 4:
+            q_config = BitsAndBytesConfig(load_in_4bit=True)
+        elif bit == 8:
+            q_config = BitsAndBytesConfig(load_in_8bit=True)
+        else:
+            q_config = BitsAndBytesConfig()
+
+        pipe = pipeline(
+            "text-generation",
+            model="google/medgemma-27b-text-it",
+            torch_dtype=torch.bfloat16,
+            model_kwargs={"quantization_config": q_config}
+        )
+    else:
+        model, tokenizer = FastLanguageModel.from_pretrained(
+            model_name="unsloth/medgemma-27b-text-it-unsloth-bnb-4bit",
+            max_seq_length=32768,
+            dtype=torch.bfloat16,
+            load_in_4bit=True,
+        )
+
+        FastLanguageModel.for_inference(model)
+
+        tokenizer = get_chat_template(
+            tokenizer,
+            chat_template="gemma3",
+        )
+
+        pipe = (model, tokenizer)
 
     evaluate(dataset, pipe)
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(
+        description="Run evaluation experiment."
+    )
+    parser.add_argument(
+        "--backend",
+        type=str,
+        required=True,
+        default="hf",
+        help="Backend to use, currently support hf (huggingface default) or unsloth (faster but limited model options)"
+    )
+    parser.add_argument(
+        "--bit",
+        type=int,
+        default=None,
+        help="Quantization to use (4, 8). If omitted, defaults to BF16."
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        default='dataset.csv',
+        required=True,
+        help="Dataset path."
+    )
+
+    args = parser.parse_args()
+    main(args.backend, args.bit, args.dataset)
