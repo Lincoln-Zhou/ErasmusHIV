@@ -2,8 +2,7 @@ import pandas as pd
 
 
 def parse_gemma_output(output: str) -> int:
-    eol = output.strip()[
-          -10:]  # This number can be lower if we can guarantee the model would only say yes/no at the very end
+    eol = output.strip()[-10:]  # This number can be lower if we can guarantee the model would only say yes/no at the very end
 
     eol = eol.lower()
 

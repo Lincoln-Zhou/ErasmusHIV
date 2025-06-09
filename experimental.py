@@ -32,7 +32,7 @@ def run_unsloth(prompt: str, pipe):
 
     outputs = model.generate(
         **inputs,
-        max_new_tokens=2048,
+        max_new_tokens=16384,
         temperature=1.0,
         top_k=64,
         top_p=0.95,

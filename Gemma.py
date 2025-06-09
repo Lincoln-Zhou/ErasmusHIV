@@ -3,10 +3,10 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-import torch
-from transformers import pipeline, BitsAndBytesConfig
 from unsloth import FastLanguageModel
 from unsloth.chat_templates import get_chat_template
+import torch
+from transformers import pipeline, BitsAndBytesConfig
 
 import argparse
 from typing import Optional
@@ -25,7 +25,7 @@ def run(prompt: str, pipe):
         {"role": "user", "content": prompt}
     ]
 
-    output = pipe(messages, max_new_tokens=2048)
+    output = pipe(messages, max_new_tokens=16384)
     response = output[0]["generated_text"][-1]["content"]
 
     decision = parse_gemma_output(response)
@@ -41,7 +41,7 @@ def evaluate(dataset: str | pd.DataFrame, pipe):
 
     predictions, outputs = [], []
 
-    for idx, row in tqdm(dataset.iterrows()):
+    for idx, row in tqdm(dataset.iterrows(), total=dataset.shape[0]):
         prompt = row['prompt']
 
         if not isinstance(pipe, tuple):
@@ -71,7 +71,7 @@ def evaluate(dataset: str | pd.DataFrame, pipe):
 
 def main(backend: str, bit: Optional[int], dataset: str):
     assert backend in ['hf', 'unsloth'], 'Invalid backend specified.'
-    assert bit in [4, 8, 16], 'Invalid quantization configuration.'
+    assert bit in [4, 8, 16] or bit is None, 'Invalid quantization configuration.'
 
     dataset = build_dataset(dataset)
 
