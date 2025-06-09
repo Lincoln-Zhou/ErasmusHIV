@@ -55,8 +55,8 @@ def run_unsloth(prompt: str, pipe):
 def run_llama(prompt: str, ip: str):
     # This method interacts with an active llama_cpp server (or any OpenAI API compatible service) to obtain the model response
     # For local testing, make sure a server is running first
-    # Example command to start server:
-    # llama-server -hf unsloth/medgemma-27b-text-it-GGUF:Q4_K_M
+    # Example command to start server (with max context window and full GPU offloading):
+    # llama-server -hf unsloth/medgemma-27b-text-it-GGUF:Q4_K_M -c 131072 -ngl 63
     # Q4_K_M can be changed to other quantized versions
 
     headers = {"Content-Type": "application/json"}
