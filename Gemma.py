@@ -13,7 +13,7 @@ from typing import Optional
 import os
 import time
 
-from experimental import run_unsloth
+from experimental import run_unsloth, run_llama
 from utilities import parse_gemma_output, build_dataset
 
 
@@ -44,10 +44,12 @@ def evaluate(dataset: str | pd.DataFrame, pipe):
     for idx, row in tqdm(dataset.iterrows(), total=dataset.shape[0]):
         prompt = row['prompt']
 
-        if not isinstance(pipe, tuple):
-            prediction, output = run(prompt, pipe)
-        else:
+        if isinstance(pipe, tuple):
             prediction, output = run_unsloth(prompt, pipe)
+        elif isinstance(pipe, str):
+            prediction, output = run_llama(prompt, pipe)
+        else:
+            prediction, output = run(prompt, pipe)
 
         predictions.append(prediction)
         outputs.append(output)
@@ -70,7 +72,7 @@ def evaluate(dataset: str | pd.DataFrame, pipe):
 
 
 def main(backend: str, bit: Optional[int], dataset: str):
-    assert backend in ['hf', 'unsloth'], 'Invalid backend specified.'
+    assert backend in ['hf', 'unsloth', 'llama'], 'Invalid backend specified.'
     assert bit in [4, 8, 16] or bit is None, 'Invalid quantization configuration.'
 
     dataset = build_dataset(dataset)
@@ -89,12 +91,12 @@ def main(backend: str, bit: Optional[int], dataset: str):
             torch_dtype=torch.bfloat16,
             model_kwargs={"quantization_config": q_config}
         )
-    else:
+    elif backend == 'unsloth':
         model, tokenizer = FastLanguageModel.from_pretrained(
-            model_name="unsloth/medgemma-27b-text-it-unsloth-bnb-4bit",
+            model_name="unsloth/medgemma-27b-text-it-unsloth-bnb-4bit" if bit == 4 else 'unsloth/medgemma-27b-text-it',
             max_seq_length=32768,
             dtype=torch.bfloat16,
-            load_in_4bit=True,
+            load_in_4bit=True if bit == 4 else False,
         )
 
         FastLanguageModel.for_inference(model)
@@ -105,6 +107,8 @@ def main(backend: str, bit: Optional[int], dataset: str):
         )
 
         pipe = (model, tokenizer)
+    else:
+        pipe = 'http://localhost:8080/v1/chat/completions'       # To be implemented
 
     evaluate(dataset, pipe)
 

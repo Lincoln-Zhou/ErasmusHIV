@@ -11,6 +11,7 @@ def parse_gemma_output(output: str) -> int:
     elif 'no' in eol:
         return 0
     else:
+        print(output)
         raise ValueError(f'Unrecognized output: {eol}')
 
 
