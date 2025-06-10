@@ -15,17 +15,18 @@ import time
 
 from experimental import run_unsloth, run_llama
 from utilities import parse_gemma_output, build_dataset
+from prompt import SYSTEM_PROMPT
 
 
 def run(prompt: str, pipe):
     # Execute a single prompt and get parsed response from LLM
 
     messages = [
-        {"role": "system", "content": "You are a clinical decision support assistant. Your task is to help determine whether HIV testing is recommended for a patient based on Dutch medical notes (EHR text). You follow clinical guidelines and reason step by step before making a decision. Only recommend testing if there is a clear indicator."},
+        {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": prompt}
     ]
 
-    output = pipe(messages, max_new_tokens=16384)
+    output = pipe(messages, max_new_tokens=131072)
     response = output[0]["generated_text"][-1]["content"]
 
     decision = parse_gemma_output(response)

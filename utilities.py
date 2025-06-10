@@ -25,16 +25,11 @@ def build_dataset(raw_dataset: str | pd.DataFrame) -> pd.DataFrame:
 
     ehr_prompts = ehr_texts.apply(lambda x:
                                   f"""
-    Analyze the following Dutch electronic health record (EHR) text and determine whether HIV testing is recommended based on relevant medical indicators.
+    Analyze the following Dutch clinical note and determine whether HIV testing is recommended.
 
-    Indicators may include:
-    - Indicator diseases (e.g., tuberculosis, chronic hepatitis, sexually transmitted infections)
-    - Risk behaviors (e.g., injection drug use, men who have sex with men)
-    - Unexplained symptoms (e.g., weight loss, prolonged fever)
-    
-    Follow these steps:  
-    1. Analyze relevant clinical information.  
-    2. Identify any applicable indicators.  
+    Follow these steps:
+    1. Identify any indicator condition(s) described.
+    2. Check for valid exclusions.
     3. Decide whether HIV testing is warranted. Output only "YES" or "NO".
 
     Text:  

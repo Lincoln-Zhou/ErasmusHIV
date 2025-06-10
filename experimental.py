@@ -1,10 +1,7 @@
-import torch
 from huggingface_hub import login
 
-from unsloth import FastLanguageModel
-from unsloth.chat_templates import get_chat_template
-
 from utilities import parse_gemma_output, build_dataset
+from prompt import SYSTEM_PROMPT
 
 import requests
 
@@ -17,7 +14,7 @@ def run_unsloth(prompt: str, pipe):
     model, tokenizer = pipe
 
     messages = [
-        {"role": "system", "content": "You are a clinical decision support assistant. Your task is to help determine whether HIV testing is recommended for a patient based on Dutch medical notes (EHR text). You follow clinical guidelines and reason step by step before making a decision. Only recommend testing if there is a clear indicator."},
+        {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": prompt}
     ]
 
@@ -34,7 +31,7 @@ def run_unsloth(prompt: str, pipe):
 
     outputs = model.generate(
         **inputs,
-        max_new_tokens=16384,
+        max_new_tokens=131072,
         temperature=1.0,
         top_k=64,
         top_p=0.95,
@@ -64,10 +61,10 @@ def run_llama(prompt: str, ip: str):
     payload = {
         "model": "any",  # this value is ignored by llama-server
         "messages": [
-            {"role": "system", "content": "You are a clinical decision support assistant. Your task is to help determine whether HIV testing is recommended for a patient based on Dutch medical notes (EHR text). You follow clinical guidelines and reason step by step before making a decision. Only recommend testing if there is a clear indicator."},
+            {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 16384,
+        "max_tokens": 131072,
         "temperature": 1.0,
         "top_k": 64,
         "top_p": 0.95,
