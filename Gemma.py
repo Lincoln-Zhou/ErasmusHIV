@@ -94,7 +94,7 @@ def main(backend: str, bit: Optional[int], dataset: str):
     elif backend == 'unsloth':
         model, tokenizer = FastLanguageModel.from_pretrained(
             model_name="unsloth/medgemma-27b-text-it-unsloth-bnb-4bit" if bit == 4 else 'unsloth/medgemma-27b-text-it',
-            max_seq_length=32768,
+            max_seq_length=131072,
             dtype=torch.bfloat16,
             load_in_4bit=True if bit == 4 else False,
         )
