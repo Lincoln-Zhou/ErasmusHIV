@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
@@ -12,8 +13,7 @@ titles = [
     "4-bit Complex Prompt", "8-bit Complex Prompt", "16-bit Complex Prompt"
 ]
 
-# Load labels (assume this is available)
-labels = np.load("labels.npy")  # or however you load your true labels
+labels = pd.read_csv('../gemma_res/labels.csv')['flag'].to_numpy()
 
 # Create subplots
 fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(18, 8))
@@ -21,7 +21,7 @@ axes = axes.flatten()
 
 for i, (folder, title) in enumerate(zip(folders, titles)):
     # Load predictions from .npy
-    y_pred = np.load(f"{folder}/predictions.npy")
+    y_pred = np.load(f"../gemma_res/{folder}/predictions.npy")
 
     # Compute confusion matrix
     cm = confusion_matrix(labels, y_pred, labels=[0, 1])
@@ -33,4 +33,6 @@ for i, (folder, title) in enumerate(zip(folders, titles)):
 
 # Adjust layout
 plt.tight_layout()
+
+plt.savefig("../gemma_res/confusion_matrix.png", dpi=400, transparent=True)
 plt.show()
