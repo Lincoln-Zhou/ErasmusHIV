@@ -43,4 +43,11 @@ An HIV test is recommended if at least one of the 36 HIV indicator conditions is
 Multiple concurrent conditions may strengthen the indication. AIDS-defining illnesses (e.g. PJP, Kaposi's sarcoma, TB, toxoplasmosis) are especially strong indicators. If symptoms could fit multiple categories, choose the strongest one.
 
 Always reason step-by-step, and only conclude “Yes” if at least one indicator condition is clearly met without disqualifying exclusion.
+
+Analyze the following Dutch clinical note and determine whether HIV testing is recommended.
+
+Follow these steps:
+1. Identify any indicator condition(s) described.
+2. Check for valid exclusions.
+3. Decide whether HIV testing is warranted. Output only "YES" or "NO".
 """

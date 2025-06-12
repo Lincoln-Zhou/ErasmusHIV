@@ -25,14 +25,7 @@ def build_dataset(raw_dataset: str | pd.DataFrame) -> pd.DataFrame:
 
     ehr_prompts = ehr_texts.apply(lambda x:
                                   f"""
-    Analyze the following Dutch clinical note and determine whether HIV testing is recommended.
-
-    Follow these steps:
-    1. Identify any indicator condition(s) described.
-    2. Check for valid exclusions.
-    3. Decide whether HIV testing is warranted. Output only "YES" or "NO".
-
-    Text:  
+    Text:
     "{x}"
     """)
 

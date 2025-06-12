@@ -71,9 +71,23 @@ def run_llama(prompt: str, ip: str):
         "min_p": 0.0
     }
 
-    resp = requests.post(ip, headers=headers, json=payload)
-    resp.raise_for_status()
-    data = resp.json()
+    try:
+        resp = requests.post(ip, headers=headers, json=payload)
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.exceptions.HTTPError as err:
+        print('Warning, input longer than max context window, attempting splitting..')
+        mid = len(prompt) // 2
+        part1, part2 = prompt[:mid], prompt[mid:]
+
+        dec1, resp1 = run_llama(part1, ip)
+        dec2, resp2 = run_llama(part2, ip)
+
+        # OR the two binary decisions, and combine the raw responses
+        final_decision = dec1 or dec2
+        final_response = resp1 + "\n" + resp2
+
+        return final_decision, final_response
 
     response = data["choices"][0]["message"]["content"]
 
