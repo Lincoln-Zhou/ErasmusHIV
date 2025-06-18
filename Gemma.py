@@ -3,8 +3,6 @@ import pandas as pd
 import numpy as np
 from tqdm import tqdm
 
-from unsloth import FastLanguageModel
-from unsloth.chat_templates import get_chat_template
 import torch
 from transformers import pipeline, BitsAndBytesConfig
 
@@ -64,7 +62,7 @@ def evaluate(dataset: str | pd.DataFrame, pipe):
     np.save(f'{save_name}/predictions.npy', predictions)
 
     with open(f'{save_name}/llm_outputs.txt', 'w') as file:
-        file.writelines('\n\n'.join(outputs))
+        file.writelines('\n\n\n'.join(outputs))
 
     labels = dataset['label'].to_numpy().astype(int)
 
@@ -93,6 +91,9 @@ def main(backend: str, bit: Optional[int], dataset: str):
             model_kwargs={"quantization_config": q_config}
         )
     elif backend == 'unsloth':
+        from unsloth import FastLanguageModel
+        from unsloth.chat_templates import get_chat_template
+
         model, tokenizer = FastLanguageModel.from_pretrained(
             model_name="unsloth/medgemma-27b-text-it-unsloth-bnb-4bit" if bit == 4 else 'unsloth/medgemma-27b-text-it',
             max_seq_length=131072,
