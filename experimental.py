@@ -68,7 +68,8 @@ def run_llama(prompt: str, ip: str):
         "temperature": 1.0,
         "top_k": 64,
         "top_p": 0.95,
-        "min_p": 0.0
+        "min_p": 0.0,
+        "logprobs": True
     }
 
     try:

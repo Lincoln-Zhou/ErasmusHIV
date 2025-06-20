@@ -1,4 +1,5 @@
 import pandas as pd
+import json
 
 
 def parse_gemma_output(output: str) -> int:
@@ -13,6 +14,17 @@ def parse_gemma_output(output: str) -> int:
     else:
         print(output)
         raise ValueError(f'Unrecognized output: {eol}')
+
+
+def calculate_cumulate_logprob(response):
+    # Calculates the cumulated log-probability of a generation, normalized by output token length
+    # Can be used as a metric for test time scaling
+    # Experimental
+    probs = response['choices'][0]['logprobs']['content']
+
+    cumulate_logprob = sum(x['logprob'] for x in probs if x['logprob'] is not None) / len(probs)
+
+    return cumulate_logprob
 
 
 def build_dataset(raw_dataset: str | pd.DataFrame) -> pd.DataFrame:
