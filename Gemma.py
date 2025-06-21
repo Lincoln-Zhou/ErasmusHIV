@@ -43,31 +43,31 @@ def evaluate(dataset: str | pd.DataFrame, pipe):
     for idx, row in tqdm(dataset.iterrows(), total=dataset.shape[0]):
         prompt = row['prompt']
 
-        if isinstance(pipe, tuple):
-            prediction, output = run_unsloth(prompt, pipe)
-        elif isinstance(pipe, str):
-            prediction, output = run_llama(prompt, pipe)
-        else:
-            prediction, output = run(prompt, pipe)
+        for _ in range(3):
+            if isinstance(pipe, tuple):
+                prediction, output = run_unsloth(prompt, pipe)
+            elif isinstance(pipe, str):
+                prediction, output, prob = run_llama(prompt, pipe)
 
-        predictions.append(prediction)
-        outputs.append(output)
+                predictions.append({'prediction': prediction, 'prob': prob})
+                outputs.append({'output': output})
+            else:
+                prediction, output = run(prompt, pipe)
 
-    predictions = np.array(predictions).astype(int)
+    predictions = pd.DataFrame(predictions)
+    outputs = pd.DataFrame(outputs)
 
     # Save prediction results to unique folder for future inspections
     save_name = f'experiment_{int(time.time())}'
     os.makedirs(save_name, exist_ok=True)
 
-    np.save(f'{save_name}/predictions.npy', predictions)
-
-    with open(f'{save_name}/llm_outputs.txt', 'w') as file:
-        file.writelines('\n\n\n'.join(outputs))
+    predictions.to_csv(f'{save_name}/predictions.csv', index=False)
+    outputs.to_csv(f'{save_name}/outputs.csv', index=False)
 
     labels = dataset['label'].to_numpy().astype(int)
 
-    print(classification_report(labels, predictions, target_names=['Exclusion', 'Inclusion']))
-    print(f'MCC: {matthews_corrcoef(labels, predictions)}')
+    print(classification_report(labels, predictions['prediction'].to_numpy(), target_names=['Exclusion', 'Inclusion']))
+    print(f"MCC: {matthews_corrcoef(labels, predictions['prediction'].to_numpy())}")
 
 
 def main(backend: str, bit: Optional[int], dataset: str):

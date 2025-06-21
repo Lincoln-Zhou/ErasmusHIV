@@ -1,6 +1,6 @@
 from huggingface_hub import login
 
-from utilities import parse_gemma_output, build_dataset
+from utilities import parse_gemma_output, build_dataset, calculate_cumulate_logprob
 from prompt import SYSTEM_PROMPT
 
 import requests
@@ -81,20 +81,22 @@ def run_llama(prompt: str, ip: str):
         mid = len(prompt) // 2
         part1, part2 = prompt[:mid], prompt[mid:]
 
-        dec1, resp1 = run_llama(part1, ip)
-        dec2, resp2 = run_llama(part2, ip)
+        dec1, resp1, prob1 = run_llama(part1, ip)
+        dec2, resp2, prob2 = run_llama(part2, ip)
 
         # OR the two binary decisions, and combine the raw responses
         final_decision = dec1 or dec2
         final_response = resp1 + "\n" + resp2
 
-        return final_decision, final_response
+        return final_decision, final_response, (prob1 + prob2) * 0.5
 
     response = data["choices"][0]["message"]["content"]
 
     decision = parse_gemma_output(response)
 
-    return decision, response
+    prob = calculate_cumulate_logprob(data)
+
+    return decision, response, prob
 
 
 def main():
