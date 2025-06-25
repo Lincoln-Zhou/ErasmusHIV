@@ -110,7 +110,7 @@ def main(backend: str, bit: Optional[int], dataset: str):
 
         pipe = (model, tokenizer)
     else:
-        pipe = 'http://localhost:8080/v1/chat/completions'       # To be implemented
+        pipe = 'http://localhost:8080/v1/chat/completions'
 
     evaluate(dataset, pipe)
 
