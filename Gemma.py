@@ -123,8 +123,8 @@ if __name__ == '__main__':
         "--backend",
         type=str,
         required=True,
-        default="hf",
-        help="Backend to use, currently support hf (huggingface default) or unsloth (faster but limited model options)"
+        default="llama",
+        help="Backend to use ['hf', 'unsloth', 'llama'], currently support llama.cpp (default), huggingface or unsloth (limited model options)"
     )
     parser.add_argument(
         "--bit",
