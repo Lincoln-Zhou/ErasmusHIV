@@ -36,6 +36,7 @@ model.train_model(train)
 model.eval_model(test)
 
 test_entries = test['text'].tolist()
-predictions, _ = model.predict(test_entries)
+predictions, raw = model.predict(test_entries)
 
 np.save('predictions_mbert_base.npy', np.array(predictions))
+np.save('raw_mbert_base.npy', np.array(raw))
