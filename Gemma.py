@@ -12,7 +12,7 @@ import os
 import time
 
 from experimental import run_unsloth, run_llama
-from utilities import parse_gemma_output, build_dataset
+from utilities import parse_gemma_output, build_dataset, build_dataset_with_add
 from prompt import SYSTEM_PROMPT
 
 
@@ -70,11 +70,14 @@ def evaluate(dataset: str | pd.DataFrame, pipe):
     print(f"MCC: {matthews_corrcoef(labels, predictions['prediction'].to_numpy())}")
 
 
-def main(backend: str, bit: Optional[int], dataset: str):
+def main(backend: str, bit: Optional[int], dataset: str, add: bool = False,):
     assert backend in ['hf', 'unsloth', 'llama'], 'Invalid backend specified.'
     assert bit in [4, 8, 16] or bit is None, 'Invalid quantization configuration.'
 
-    dataset = build_dataset(dataset)
+    if add:
+        dataset = build_dataset_with_add(dataset, 'med.csv', 'labtests.csv')
+    else:
+        dataset = build_dataset(dataset)
 
     if backend == 'hf':
         if bit == 4:
@@ -139,6 +142,12 @@ if __name__ == '__main__':
         required=True,
         help="Dataset path."
     )
+    parser.add_argument(
+        "--add",
+        action="store_true",
+        default=False,
+        help="Whether to use additional medication/labtest data, default False."
+    )
 
     args = parser.parse_args()
-    main(args.backend, args.bit, args.dataset)
+    main(args.backend, args.bit, args.dataset, args.add)

@@ -28,14 +28,16 @@ def calculate_cumulate_logprob(response):
     return cumulate_logprob
 
 
-def format_group(df: str | pd.DataFrame, drop_col='Pseudoniem') -> str:
+def format_group(df: pd.DataFrame) -> str:
     # Turn a grouped DataFrame into a multiline formatted string.
 
-    if isinstance(df, str):
-        df = pd.read_csv(df)
+    drop_cols = [
+        "Pseudoniem",
+        "effectiveDateTime"
+    ]
 
     lines = []
-    fields = [c for c in df.columns if c != drop_col]
+    fields = [c for c in df.columns if c not in drop_cols]
 
     for row in df.itertuples(index=False):
         pairs = [f"{col}: {getattr(row, col)}" for col in fields]
@@ -59,9 +61,12 @@ def build_dataset_with_add(raw_dataset: str | pd.DataFrame, med_data: str | pd.D
     med_fmt = (
         med_data
         .groupby('Pseudoniem', as_index=False)
-        .apply(lambda g: format_group(g))
-        .rename(columns={None: 'med_str'})
+        .agg({
+            'code_text': lambda vals: "\n".join(pd.Series(vals).unique())
+        })
+        .rename(columns={'code_text': 'med_str'})
     )
+
     test_fmt = (
         test_data
         .groupby('Pseudoniem', as_index=False)
