@@ -28,19 +28,17 @@ def calculate_cumulate_logprob(response):
     return cumulate_logprob
 
 
-def format_group(df: pd.DataFrame) -> str:
+def format_group(df: pd.DataFrame, preserved_cols, rename: dict = None) -> str:
     # Turn a grouped DataFrame into a multiline formatted string.
 
-    drop_cols = [
-        "Pseudoniem",
-        "effectiveDateTime"
-    ]
-
     lines = []
-    fields = [c for c in df.columns if c not in drop_cols]
 
     for row in df.itertuples(index=False):
-        pairs = [f"{col}: {getattr(row, col)}" for col in fields]
+        if rename is None:
+            pairs = [f"{col}: {getattr(row, col)}" for col in preserved_cols]
+        else:
+            pairs = [f"{rename[col]}: {getattr(row, col)}" for col in preserved_cols]
+
         lines.append(", ".join(pairs))
 
     return "\n".join(lines)
@@ -61,16 +59,14 @@ def build_dataset_with_add(raw_dataset: str | pd.DataFrame, med_data: str | pd.D
     med_fmt = (
         med_data
         .groupby('Pseudoniem', as_index=False)
-        .agg({
-            'code_text': lambda vals: "\n".join(pd.Series(vals).unique())
-        })
+        .apply(lambda g: format_group(g, preserved_cols=['code5_ATC_code', 'code_text'], rename={'code5_ATC_code': 'ATC', 'code_text': 'Medication'}))
         .rename(columns={'code_text': 'med_str'})
     )
 
     test_fmt = (
         test_data
         .groupby('Pseudoniem', as_index=False)
-        .apply(lambda g: format_group(g))
+        .apply(lambda g: format_group(g, preserved_cols=['hix_code', 'valueString'], rename={'hix_code': 'Test', 'valueString': 'Result'}))
         .rename(columns={None: 'test_str'})
     )
 
