@@ -1,4 +1,5 @@
 import pandas as pd
+from textwrap import dedent
 import json
 
 
@@ -27,6 +28,82 @@ def calculate_cumulate_logprob(response):
     return cumulate_logprob
 
 
+def format_group(df: pd.DataFrame) -> str:
+    # Turn a grouped DataFrame into a multiline formatted string.
+
+    drop_cols = [
+        "Pseudoniem",
+        "effectiveDateTime"
+    ]
+
+    lines = []
+    fields = [c for c in df.columns if c not in drop_cols]
+
+    for row in df.itertuples(index=False):
+        pairs = [f"{col}: {getattr(row, col)}" for col in fields]
+        lines.append(", ".join(pairs))
+
+    return "\n".join(lines)
+
+
+def build_dataset_with_add(raw_dataset: str | pd.DataFrame, med_data: str | pd.DataFrame, test_data: str | pd.DataFrame) -> pd.DataFrame:
+    # Inclusion of medication and lab test data are experimental. Currently, they are only supported by passing in pandas DataFrame
+
+    if isinstance(raw_dataset, str):
+        raw_dataset = pd.read_csv(raw_dataset)
+
+    if isinstance(med_data, str):
+        med_data = pd.read_csv(med_data)
+
+    if isinstance(test_data, str):
+        test_data = pd.read_csv(test_data)
+
+    med_fmt = (
+        med_data
+        .groupby('Pseudoniem', as_index=False)
+        .agg({
+            'code_text': lambda vals: "\n".join(pd.Series(vals).unique())
+        })
+        .rename(columns={'code_text': 'med_str'})
+    )
+
+    test_fmt = (
+        test_data
+        .groupby('Pseudoniem', as_index=False)
+        .apply(lambda g: format_group(g))
+        .rename(columns={None: 'test_str'})
+    )
+
+    merged = (
+        raw_dataset
+        .merge(med_fmt, on='Pseudoniem', how='left')
+        .merge(test_fmt, on='Pseudoniem', how='left')
+    )
+
+    def build_template(row):
+        data_block = row['med_str'] if pd.notna(row['med_str']) else "None"
+        test_block = row['test_str'] if pd.notna(row['test_str']) else "None"
+
+        return dedent(f"""\
+        EHR text:
+        {row['text']}
+        
+        medication data:
+        {data_block}
+        
+        lab test data:
+        {test_block}
+        """)    # We should inspect whether calling dedent() on a f-string would cause formatting issues
+
+    merged['combined'] = merged.apply(build_template, axis=1)
+
+    labels = raw_dataset['flag']
+
+    prompt_dataset = pd.DataFrame(data={'prompt': merged['combined'], 'label': labels})
+
+    return prompt_dataset
+
+
 def build_dataset(raw_dataset: str | pd.DataFrame) -> pd.DataFrame:
     # Convert raw dataset into prompt based
 
@@ -36,10 +113,10 @@ def build_dataset(raw_dataset: str | pd.DataFrame) -> pd.DataFrame:
     ehr_texts, labels = raw_dataset['text'], raw_dataset['flag']
 
     ehr_prompts = ehr_texts.apply(lambda x:
-                                  f"""
+                                  dedent(f"""\
     Text:
     "{x}"
-    """)
+    """))
 
     prompt_dataset = pd.DataFrame(data={'prompt': ehr_prompts, 'label': labels})
 
