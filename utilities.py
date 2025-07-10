@@ -60,7 +60,7 @@ def build_dataset_with_add(raw_dataset: str | pd.DataFrame, med_data: str | pd.D
         med_data
         .groupby('Pseudoniem', as_index=False)
         .apply(lambda g: format_group(g, preserved_cols=['code5_ATC_code', 'code_text'], rename={'code5_ATC_code': 'ATC', 'code_text': 'Medication'}))
-        .rename(columns={'code_text': 'med_str'})
+        .rename(columns={None: 'med_str'})
     )
 
     test_fmt = (

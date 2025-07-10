@@ -227,9 +227,9 @@ Using the following rules:
 2. If a positive HIV result predates the flagged HIV indicator condition, the patient should be excluded (known HIV diagnosis).
 3. If no HIV indicator condition is confirmed, no HIV testing recommendation is given.
 4. If an HIV indicator condition is confirmed, an HIV test recommendation is issued only if one of the following applies:
-* No HIV test is documented.
-* The most recent HIV test was conducted more than one year prior to the HIV indicator condition.
-* The HIV indicator condition may represent an acute infection (e.g., STI such as gonorrhoea, chlamydia, syphilis, or a mononucleosis-like illness), and no HIV test was performed afterward.
+    * No HIV test is documented.
+    * The most recent HIV test was conducted more than one year prior to the HIV indicator condition.
+    * The HIV indicator condition may represent an acute infection (e.g., STI such as gonorrhoea, chlamydia, syphilis, or a mononucleosis-like illness), and no HIV test was performed afterward.
 5. No HIV test recommendation is made if there is clear documentation of a negative HIV test conducted within one year before the HIV indicator condition.
 
 Step 9 Final decision

@@ -64,7 +64,6 @@ def run_llama(prompt: str, ip: str):
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt}
         ],
-        "max_tokens": 131072,
         "temperature": 1.0,
         "top_k": 64,
         "top_p": 0.95,
