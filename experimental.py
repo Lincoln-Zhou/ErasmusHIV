@@ -1,7 +1,7 @@
 from huggingface_hub import login
 
 from utilities import parse_gemma_output, build_dataset, calculate_cumulate_logprob
-from prompt import SYSTEM_PROMPT
+from prompt import SYSTEM_PROMPT, SYSTEM_PROMPT_COMPLEX
 
 import requests
 
@@ -61,7 +61,7 @@ def run_llama(prompt: str, ip: str):
     payload = {
         "model": "any",  # this value is ignored by llama-server
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": SYSTEM_PROMPT_COMPLEX},
             {"role": "user", "content": prompt}
         ],
         "temperature": 1.0,
