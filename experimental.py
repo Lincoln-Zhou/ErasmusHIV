@@ -91,7 +91,11 @@ def run_llama(prompt: str, ip: str):
 
     response = data["choices"][0]["message"]["content"]
 
-    decision = parse_gemma_output(response)
+    try:
+        decision = parse_gemma_output(response)
+    except ValueError:      # In rare cases the model would strangely outputs only a 'think' token and ends the generation
+        print('Warning, invalid output, retrying generation...')
+        decision, response, prob = run_llama(prompt, ip)
 
     prob = calculate_cumulate_logprob(data)
 
