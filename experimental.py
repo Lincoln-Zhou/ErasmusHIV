@@ -72,7 +72,7 @@ def run_llama(prompt: str, ip: str):
     }
 
     try:
-        resp = requests.post(ip, headers=headers, json=payload, timeout=60)
+        resp = requests.post(ip, headers=headers, json=payload)
         resp.raise_for_status()
         data = resp.json()
 
