@@ -4,10 +4,10 @@ import numpy as np
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
 
-labels = pd.read_csv('balanced.csv')['flag'].to_numpy()
+labels = pd.read_csv('../gemma_res/labels_full.csv')['flag'].to_numpy()
 N = len(labels)
 
-predictions = pd.read_csv('predictions.csv')
+predictions = pd.read_csv('../gemma_res/experiment_1752252343/predictions.csv')
 preds = predictions['prediction'].values.reshape(N, 3)
 probs = predictions['prob'].values.reshape(N, 3)
 
