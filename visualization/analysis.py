@@ -5,6 +5,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import accuracy_score
 from scipy.stats import pearsonr, spearmanr, ttest_ind, mannwhitneyu
+from transformers import AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained("unsloth/medgemma-27b-it")
+
+
+def remove_outlier(data: pd.DataFrame | pd.Series, percentage: float = 0.005):
+    lower = data.quantile(percentage)
+    upper = data.quantile(1 - percentage)
+
+    return data[(data < upper) & (data > lower)]
 
 
 # Load data
@@ -52,7 +61,11 @@ plt.show()
 # -------------------------------
 # Analysis 2: Output Length vs Correctness
 # -------------------------------
-output_lengths = np.vectorize(len)(output_matrix)
+output_lengths = np.array([
+    [len(tokenizer.encode(text, add_special_tokens=False)) for text in triplet]
+    for triplet in output_matrix
+])
+
 avg_output_length = output_lengths.mean(axis=1)
 
 correct_df = pd.DataFrame({
@@ -81,7 +94,6 @@ plt.tight_layout()
 plt.show()
 
 # --- Updated Analysis 3: Input Length vs Output Length with Log Scale ---
-output_lengths = np.vectorize(len)(output_matrix)
 avg_output_length = output_lengths.mean(axis=1)
 
 correlation_df = pd.DataFrame({
@@ -125,17 +137,17 @@ df = pd.DataFrame({
 })
 
 # Split data by correctness
-input_correct = df[df['correct'] == 1]['input_length']
-input_incorrect = df[df['correct'] == 0]['input_length']
-output_correct = df[df['correct'] == 1]['avg_output_length']
-output_incorrect = df[df['correct'] == 0]['avg_output_length']
+input_correct = remove_outlier(df[df['correct'] == 1]['input_length'])
+input_incorrect = remove_outlier(df[df['correct'] == 0]['input_length'])
+output_correct = remove_outlier(df[df['correct'] == 1]['avg_output_length'])
+output_incorrect = remove_outlier(df[df['correct'] == 0]['avg_output_length'])
 
 # --- Test 1: Input length difference between correct and incorrect ---
 tstat_input, pval_input = ttest_ind(input_correct, input_incorrect, equal_var=False)
 u_input, pval_u_input = mannwhitneyu(input_correct, input_incorrect, alternative='two-sided')
 
 # --- Test 2: Output length difference between correct and incorrect ---
-tstat_output, pval_output = ttest_ind(output_correct, output_incorrect, equal_var=False)
+tstat_output, pval_output = ttest_ind(output_correct, output_incorrect, equal_var=False, alternative='less')
 u_output, pval_u_output = mannwhitneyu(output_correct, output_incorrect, alternative='less')
 
 # Results

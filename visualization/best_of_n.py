@@ -3,13 +3,28 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 
+from transformers import AutoTokenizer
+tokenizer = AutoTokenizer.from_pretrained("unsloth/medgemma-27b-it")
 
+# Load label
 labels = pd.read_csv('../gemma_res/labels_full.csv')['flag'].to_numpy()
 N = len(labels)
 
+# Load predictions and probabilities
 predictions = pd.read_csv('../gemma_res/experiment_1752252343/predictions.csv')
 preds = predictions['prediction'].values.reshape(N, 3)
 probs = predictions['prob'].values.reshape(N, 3)
+
+# Load output texts
+outputs = pd.read_csv('../gemma_res/experiment_1752252343/outputs.csv')['output'].values.reshape(N, 3)
+
+# Tokenize
+output_lengths = np.array([
+    [len(tokenizer.encode(text, add_special_tokens=False)) for text in triplet]
+    for triplet in outputs
+])
+
+# Aggregation Methods
 
 # 1) First prediction
 preds_first = preds[:, 0]
@@ -21,15 +36,23 @@ preds_majority = (preds.sum(axis=1) >= 2).astype(int)
 idx_max = np.argmax(probs, axis=1)
 preds_maxprob = preds[np.arange(N), idx_max]
 
-# 4) No-inconsistent
+# 4) No-inconsistent (only trust consistent predictions)
 mask_trusted = (preds.sum(axis=1) == 0) | (preds.sum(axis=1) == 3)
-trusted_preds = preds[mask_trusted, 0]    # all three are the same, so pick the first
+trusted_preds = preds[mask_trusted, 0]
 trusted_labels = labels[mask_trusted]
+
+# 5) Shortest output
+idx_minlen = np.argmin(output_lengths, axis=1)
+preds_shortest = preds[np.arange(N), idx_minlen]
+
+# 6) Longest output
+idx_maxlen = np.argmax(output_lengths, axis=1)
+preds_longest = preds[np.arange(N), idx_maxlen]
 
 # Define target names
 target_names = ['Exclusion', 'Inclusion']
 
-# — Classification reports
+# Classification Reports
 print("=== First‐prediction method ===")
 print(classification_report(labels, preds_first, target_names=target_names))
 print("=== Majority‐voting method ===")
@@ -38,21 +61,31 @@ print("=== Max‐probability method ===")
 print(classification_report(labels, preds_maxprob, target_names=target_names))
 print("=== No-inconsistency method ===")
 print(classification_report(trusted_labels, trusted_preds, target_names=target_names))
+print("=== Shortest-output method ===")
+print(classification_report(labels, preds_shortest, target_names=target_names))
+print("=== Longest-output method ===")
+print(classification_report(labels, preds_longest, target_names=target_names))
 
-# — Confusion matrices
+# Confusion Matrices
 cms = [
     confusion_matrix(labels, preds_first),
     confusion_matrix(labels, preds_majority),
     confusion_matrix(labels, preds_maxprob),
-    confusion_matrix(trusted_labels, trusted_preds)
+    confusion_matrix(trusted_labels, trusted_preds),
+    confusion_matrix(labels, preds_shortest),
+    confusion_matrix(labels, preds_longest),
 ]
-titles = ["First pred", "Majority vote", "Max‐prob", "No-inconsist"]
+titles = [
+    "First pred", "Majority vote", "Max‐prob",
+    "No-inconsist", "Shortest output", "Longest output"
+]
 
-fig, axes = plt.subplots(1, 4, figsize=(20, 5))
+fig, axes = plt.subplots(2, 3, figsize=(18, 10))
+axes = axes.flatten()
 for ax, cm, title in zip(axes, cms, titles):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                   display_labels=target_names)
-    disp.plot(ax=ax, colorbar=False)     # use default styling
+    disp.plot(ax=ax, colorbar=False)
     ax.set_title(title)
 
 plt.tight_layout()
