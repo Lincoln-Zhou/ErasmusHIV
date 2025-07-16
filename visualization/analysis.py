@@ -5,8 +5,10 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import accuracy_score
 from scipy.stats import pearsonr, spearmanr, ttest_ind, mannwhitneyu
-from transformers import AutoTokenizer
-tokenizer = AutoTokenizer.from_pretrained("unsloth/medgemma-27b-it")
+
+
+exp = '1752628641'  # complex
+# exp = '1752252343'  # simple
 
 
 def remove_outlier(data: pd.DataFrame | pd.Series, percentage: float = 0.005):
@@ -18,8 +20,8 @@ def remove_outlier(data: pd.DataFrame | pd.Series, percentage: float = 0.005):
 
 # Load data
 labels_df = pd.read_csv("../gemma_res/labels_full.csv")  # Contains 'flag' and 'length'
-outputs_df = pd.read_csv("../gemma_res/experiment_1752252343/outputs.csv")  # Contains 'output'
-preds_df = pd.read_csv("../gemma_res/experiment_1752252343/predictions.csv")  # Contains 'prediction' and 'prob'
+outputs_df = pd.read_csv(f"../gemma_res/experiment_{exp}/outputs.csv")  # Contains 'output'
+preds_df = pd.read_csv(f"../gemma_res/experiment_{exp}/predictions.csv")  # Contains 'prediction' and 'prob'
 
 # Constants
 N = len(labels_df)
@@ -61,10 +63,7 @@ plt.show()
 # -------------------------------
 # Analysis 2: Output Length vs Correctness
 # -------------------------------
-output_lengths = np.array([
-    [len(tokenizer.encode(text, add_special_tokens=False)) for text in triplet]
-    for triplet in output_matrix
-])
+output_lengths = outputs_df['length'].values.reshape(N, 3)
 
 avg_output_length = output_lengths.mean(axis=1)
 
@@ -143,12 +142,12 @@ output_correct = remove_outlier(df[df['correct'] == 1]['avg_output_length'])
 output_incorrect = remove_outlier(df[df['correct'] == 0]['avg_output_length'])
 
 # --- Test 1: Input length difference between correct and incorrect ---
-tstat_input, pval_input = ttest_ind(input_correct, input_incorrect, equal_var=False)
-u_input, pval_u_input = mannwhitneyu(input_correct, input_incorrect, alternative='two-sided')
+tstat_input, pval_input = ttest_ind(input_correct, input_incorrect, equal_var=False, alternative='two-sided')
+u_input, pval_u_input = mannwhitneyu(input_correct, input_incorrect, alternative='greater')
 
 # --- Test 2: Output length difference between correct and incorrect ---
-tstat_output, pval_output = ttest_ind(output_correct, output_incorrect, equal_var=False, alternative='less')
-u_output, pval_u_output = mannwhitneyu(output_correct, output_incorrect, alternative='less')
+tstat_output, pval_output = ttest_ind(output_correct, output_incorrect, equal_var=False, alternative='two-sided')
+u_output, pval_u_output = mannwhitneyu(output_correct, output_incorrect, alternative='two-sided')
 
 # Results
 res = {

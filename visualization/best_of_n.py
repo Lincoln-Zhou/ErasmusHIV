@@ -2,27 +2,27 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
+import scienceplots
+# plt.style.use(['science'])
 
-from transformers import AutoTokenizer
-tokenizer = AutoTokenizer.from_pretrained("unsloth/medgemma-27b-it")
+
+exp = '1752628641'  # complex
+exp = '1752252343'  # simple
 
 # Load label
 labels = pd.read_csv('../gemma_res/labels_full.csv')['flag'].to_numpy()
 N = len(labels)
 
 # Load predictions and probabilities
-predictions = pd.read_csv('../gemma_res/experiment_1752252343/predictions.csv')
+predictions = pd.read_csv(f'../gemma_res/experiment_{exp}/predictions.csv')
 preds = predictions['prediction'].values.reshape(N, 3)
 probs = predictions['prob'].values.reshape(N, 3)
 
 # Load output texts
-outputs = pd.read_csv('../gemma_res/experiment_1752252343/outputs.csv')['output'].values.reshape(N, 3)
+outputs = pd.read_csv(f'../gemma_res/experiment_{exp}/outputs.csv')['output'].values.reshape(N, 3)
 
 # Tokenize
-output_lengths = np.array([
-    [len(tokenizer.encode(text, add_special_tokens=False)) for text in triplet]
-    for triplet in outputs
-])
+output_lengths = pd.read_csv(f'../gemma_res/experiment_{exp}/outputs.csv')['length'].values.reshape(N, 3)
 
 # Aggregation Methods
 
@@ -54,17 +54,17 @@ target_names = ['Exclusion', 'Inclusion']
 
 # Classification Reports
 print("=== First‐prediction method ===")
-print(classification_report(labels, preds_first, target_names=target_names))
+print(classification_report(labels, preds_first, target_names=target_names, digits=4))
 print("=== Majority‐voting method ===")
-print(classification_report(labels, preds_majority, target_names=target_names))
+print(classification_report(labels, preds_majority, target_names=target_names, digits=4))
 print("=== Max‐probability method ===")
-print(classification_report(labels, preds_maxprob, target_names=target_names))
+print(classification_report(labels, preds_maxprob, target_names=target_names, digits=4))
 print("=== No-inconsistency method ===")
-print(classification_report(trusted_labels, trusted_preds, target_names=target_names))
+print(classification_report(trusted_labels, trusted_preds, target_names=target_names, digits=4))
 print("=== Shortest-output method ===")
-print(classification_report(labels, preds_shortest, target_names=target_names))
+print(classification_report(labels, preds_shortest, target_names=target_names, digits=4))
 print("=== Longest-output method ===")
-print(classification_report(labels, preds_longest, target_names=target_names))
+print(classification_report(labels, preds_longest, target_names=target_names, digits=4))
 
 # Confusion Matrices
 cms = [
@@ -85,8 +85,11 @@ axes = axes.flatten()
 for ax, cm, title in zip(axes, cms, titles):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                   display_labels=target_names)
-    disp.plot(ax=ax, colorbar=False)
+    disp.plot(ax=ax, colorbar=False, cmap='Blues')
     ax.set_title(title)
 
 plt.tight_layout()
+
+plt.savefig(f"../gemma_res/simple_cm.png", dpi=400, transparent=True)
+
 plt.show()
