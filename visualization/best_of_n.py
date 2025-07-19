@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, classification_report
 import scienceplots
-# plt.style.use(['science'])
+plt.style.use(['science'])
 
 
 exp = '1752628641'  # complex
@@ -71,25 +71,51 @@ cms = [
     confusion_matrix(labels, preds_first),
     confusion_matrix(labels, preds_majority),
     confusion_matrix(labels, preds_maxprob),
-    confusion_matrix(trusted_labels, trusted_preds),
     confusion_matrix(labels, preds_shortest),
     confusion_matrix(labels, preds_longest),
+    confusion_matrix(trusted_labels, trusted_preds),
 ]
 titles = [
-    "First pred", "Majority vote", "Max‐prob",
-    "No-inconsist", "Shortest output", "Longest output"
+    "First Prediction", "Self-consistency", "Max‐probability",
+    "Shortest output", "Longest output", "No-inconsist"
 ]
 
-fig, axes = plt.subplots(2, 3, figsize=(18, 10))
+fig, axes = plt.subplots(2, 3, figsize=(9, 5))
 axes = axes.flatten()
+
 for ax, cm, title in zip(axes, cms, titles):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm,
                                   display_labels=target_names)
     disp.plot(ax=ax, colorbar=False, cmap='Blues')
     ax.set_title(title)
 
+    ax.set_xticks([], [])
+    ax.set_yticks([], [])
+
 plt.tight_layout()
 
-plt.savefig(f"../gemma_res/simple_cm.png", dpi=400, transparent=True)
+plt.savefig(f"../gemma_res/simple_cm.pdf", transparent=True)
 
+plt.show()
+
+# Confusion matrix values
+cm = np.array([[788, 169],
+               [26, 80]])
+
+# Labels
+labels = ['Exclusion', 'Inclusion']
+
+# Plotting
+disp = ConfusionMatrixDisplay(confusion_matrix=cm,
+                              display_labels=labels)
+
+fig, ax = plt.subplots(figsize=(3, 2.5))
+disp.plot(cmap='Blues', ax=ax, colorbar=False)
+
+ax.set_xticks([], [])
+ax.set_yticks([], [])
+plt.title('mBERT')
+plt.tight_layout()
+
+plt.savefig(f"../gemma_res/baseline_cm.pdf", transparent=True)
 plt.show()

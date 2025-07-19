@@ -5,15 +5,19 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import accuracy_score
 from scipy.stats import pearsonr, spearmanr, ttest_ind, mannwhitneyu
+import scienceplots
+plt.style.use(['science'])
 
 
-exp = '1752628641'  # complex
-# exp = '1752252343'  # simple
+exp, name = '1752628641', 'complex'  # complex
+# exp, name = '1752252343', 'simple'  # simple
 
 
 def remove_outlier(data: pd.DataFrame | pd.Series, percentage: float = 0.005):
-    lower = data.quantile(percentage)
-    upper = data.quantile(1 - percentage)
+    # lower = data.quantile(percentage)
+    # upper = data.quantile(1 - percentage)
+    lower = np.mean(data) - 3 * np.std(data)
+    upper = np.mean(data) + 3 * np.std(data)
 
     return data[(data < upper) & (data > lower)]
 
@@ -54,10 +58,14 @@ binned_accuracy = labels_df.groupby('length_bin_label')['correct'].mean().reset_
 plt.figure(figsize=(10, 6))
 sns.barplot(x='length_bin_label', y='correct', data=binned_accuracy)
 plt.xticks(rotation=45, ha='right')
-plt.xlabel("Input Length Bin (Token Count)")
+plt.xlabel("Input Token Length")
 plt.ylabel("Accuracy")
-plt.title("Accuracy vs Input Length (Quantile Binning with Integer Labels)")
+
+ax = plt.gca()
+ax.set_ylim((0, 1))
+
 plt.tight_layout()
+plt.savefig(f"../gemma_res/{name}_input_acc.pdf", transparent=True)
 plt.show()
 
 # -------------------------------
@@ -72,7 +80,6 @@ correct_df = pd.DataFrame({
     "correct": correctness
 })
 
-
 # Bin output lengths using quantiles
 correct_df['output_length_bin'] = pd.qcut(correct_df['avg_output_length'], q=10, duplicates='drop')
 correct_df['output_bin_label'] = correct_df['output_length_bin'].apply(
@@ -86,10 +93,14 @@ binned_accuracy = correct_df.groupby('output_bin_label')['correct'].mean().reset
 plt.figure(figsize=(10, 6))
 sns.barplot(x='output_bin_label', y='correct', data=binned_accuracy)
 plt.xticks(rotation=45, ha='right')
-plt.xlabel("Average Output Length Bin")
+plt.xlabel("Average Output Token Length")
 plt.ylabel("Accuracy")
-plt.title("Accuracy vs Output Length (Quantile Binning)")
+
+ax = plt.gca()
+ax.set_ylim((0, 1))
+
 plt.tight_layout()
+plt.savefig(f"../gemma_res/{name}_output_acc.pdf", transparent=True)
 plt.show()
 
 # --- Updated Analysis 3: Input Length vs Output Length with Log Scale ---
@@ -110,10 +121,10 @@ sns.regplot(
     ci=95
 )
 
-plt.xlabel("Input Length (log scale)")
-plt.ylabel("Average Output Length (log scale)")
-plt.title("Input Length vs Output Length (Log-Log Scale)")
+plt.xlabel("Input Token Length")
+plt.ylabel("Average Output Token Length")
 plt.tight_layout()
+plt.savefig(f"../gemma_res/{name}_input_output_corr.pdf", transparent=True)
 plt.show()
 
 spearman_corr, spearman_pval = spearmanr(
@@ -141,8 +152,39 @@ input_incorrect = remove_outlier(df[df['correct'] == 0]['input_length'])
 output_correct = remove_outlier(df[df['correct'] == 1]['avg_output_length'])
 output_incorrect = remove_outlier(df[df['correct'] == 0]['avg_output_length'])
 
+# Plot the violin plot
+plt.figure(figsize=(6, 6))
+
+vdf = pd.DataFrame({
+    'Input Length': pd.concat([input_correct, input_incorrect], ignore_index=True),
+    'Prediction': ['Correct'] * len(input_correct) + ['Incorrect'] * len(input_incorrect)
+})
+
+sns.violinplot(x='Prediction', y='Input Length', data=vdf, cut=0, inner='point', palette='pastel')
+
+plt.xlabel('')
+plt.ylabel('Input Token Length')
+plt.tight_layout()
+plt.savefig(f"../gemma_res/{name}_input_violin.pdf", transparent=True)
+plt.show()
+
+plt.figure(figsize=(6, 6))
+
+vdf = pd.DataFrame({
+    'Output Length': pd.concat([output_correct, output_incorrect], ignore_index=True),
+    'Prediction': ['Correct'] * len(output_correct) + ['Incorrect'] * len(output_incorrect)
+})
+
+sns.violinplot(x='Prediction', y='Output Length', data=vdf, cut=0, inner='point', palette='pastel')
+
+plt.xlabel('')
+plt.ylabel('Average Output Token Length')
+plt.tight_layout()
+plt.savefig(f"../gemma_res/{name}_output_violin.pdf", transparent=True)
+plt.show()
+
 # --- Test 1: Input length difference between correct and incorrect ---
-tstat_input, pval_input = ttest_ind(input_correct, input_incorrect, equal_var=False, alternative='two-sided')
+tstat_input, pval_input = ttest_ind(input_correct, input_incorrect, equal_var=False, alternative='greater')
 u_input, pval_u_input = mannwhitneyu(input_correct, input_incorrect, alternative='greater')
 
 # --- Test 2: Output length difference between correct and incorrect ---
