@@ -4,13 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import accuracy_score
-from scipy.stats import pearsonr, spearmanr, ttest_ind, mannwhitneyu
+from scipy.stats import pearsonr, spearmanr, ttest_ind, mannwhitneyu, shapiro, normaltest
 import scienceplots
 plt.style.use(['science'])
 
 
 exp, name = '1752628641', 'complex'  # complex
-# exp, name = '1752252343', 'simple'  # simple
+exp, name = '1752252343', 'simple'  # simple
 
 
 def remove_outlier(data: pd.DataFrame | pd.Series, percentage: float = 0.005):
@@ -111,7 +111,7 @@ correlation_df = pd.DataFrame({
     "avg_output_length": avg_output_length
 })
 
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=(6, 4))
 sns.scatterplot(x=np.log10(correlation_df['input_length']), y=np.log10(correlation_df['avg_output_length']), alpha=0.4)
 sns.regplot(
     x=np.log10(correlation_df['input_length']),
@@ -128,8 +128,8 @@ plt.savefig(f"../gemma_res/{name}_input_output_corr.pdf", transparent=True)
 plt.show()
 
 spearman_corr, spearman_pval = spearmanr(
-    np.log10(correlation_df['input_length']),
-    np.log10(correlation_df['avg_output_length'])
+    correlation_df['input_length'],
+    correlation_df['avg_output_length']
 )
 
 pearson_corr, pearson_pval = pearsonr(
@@ -153,7 +153,7 @@ output_correct = remove_outlier(df[df['correct'] == 1]['avg_output_length'])
 output_incorrect = remove_outlier(df[df['correct'] == 0]['avg_output_length'])
 
 # Plot the violin plot
-plt.figure(figsize=(6, 6))
+plt.figure(figsize=(5, 5))
 
 vdf = pd.DataFrame({
     'Input Length': pd.concat([input_correct, input_incorrect], ignore_index=True),
@@ -168,7 +168,7 @@ plt.tight_layout()
 plt.savefig(f"../gemma_res/{name}_input_violin.pdf", transparent=True)
 plt.show()
 
-plt.figure(figsize=(6, 6))
+plt.figure(figsize=(5, 5))
 
 vdf = pd.DataFrame({
     'Output Length': pd.concat([output_correct, output_incorrect], ignore_index=True),
@@ -183,13 +183,18 @@ plt.tight_layout()
 plt.savefig(f"../gemma_res/{name}_output_violin.pdf", transparent=True)
 plt.show()
 
+print(shapiro(input_correct))
+print(shapiro(input_incorrect))
+print(normaltest(output_correct))
+print(normaltest(output_incorrect))
+
 # --- Test 1: Input length difference between correct and incorrect ---
-tstat_input, pval_input = ttest_ind(input_correct, input_incorrect, equal_var=False, alternative='greater')
-u_input, pval_u_input = mannwhitneyu(input_correct, input_incorrect, alternative='greater')
+tstat_input, pval_input = ttest_ind(input_correct, input_incorrect, equal_var=False, alternative='two-sided')
+u_input, pval_u_input = mannwhitneyu(input_correct, input_incorrect, alternative='two-sided')
 
 # --- Test 2: Output length difference between correct and incorrect ---
 tstat_output, pval_output = ttest_ind(output_correct, output_incorrect, equal_var=False, alternative='two-sided')
-u_output, pval_u_output = mannwhitneyu(output_correct, output_incorrect, alternative='two-sided')
+u_output, pval_u_output = mannwhitneyu(output_correct, output_incorrect, alternative='less')
 
 # Results
 res = {
