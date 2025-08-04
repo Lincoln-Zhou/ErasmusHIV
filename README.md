@@ -1,0 +1,6 @@
+This repository contains code for my Master thesis: ***Automated HIV Screening on Dutch EHR with Large Language Models***, at Erasmus University Medical Center and Vrije Universiteit Amsterdam.
+
+The ErasmusHIV dataset and other data used in the thesis are not openly available due to their sensitive nature.
+
+### Abstract
+Efficient screening and early diagnosis of HIV are critical for reducing onward transmission. Although large-scale laboratory testing is not feasible, the widespread adoption of Electronic Health Records (EHRs) offers new opportunities to address this challenge. Existing research primarily focuses on applying machine learning methods to structured data, such as patient demographics, for improving HIV diagnosis. However, these approaches often overlook unstructured text data such as clinical notes, which potentially contain valuable information relevant to HIV risk. In this study, we propose a novel pipeline that leverages Large Language Model (LLM) to analyze unstructured EHR text and determine a patient’s eligibility for further HIV testing. Experimental results on clinical data from Erasmus MC demonstrate that our pipeline achieves high accuracy while maintaining a low false negative rate.
