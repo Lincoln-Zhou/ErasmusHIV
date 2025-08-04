@@ -6,7 +6,7 @@ from prompt import SYSTEM_PROMPT, SYSTEM_PROMPT_COMPLEX
 import requests
 
 
-login(token='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')
+login(token='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')    # This token has been expired
 
 
 def run_unsloth(prompt: str, pipe):
