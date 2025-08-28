@@ -17,6 +17,15 @@ df = pd.concat(dfs)
 
 df['authored'] = pd.to_datetime(df['authored'])
 
+single_date_ids = (
+    df.groupby('Pseudoniem')['authored']
+      .nunique()
+      .pipe(lambda s: s[s == 1])
+      .index
+)
+
+df = df[df['Pseudoniem'].isin(single_date_ids)].copy()
+
 df['ln'] = range(len(df))
 
 df_sorted = df.sort_values(by=['Pseudoniem', 'authored', 'ln'], ascending=[True, False, True])
