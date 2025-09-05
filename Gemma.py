@@ -10,9 +10,10 @@ import argparse
 from typing import Optional
 import os
 import time
+import traceback
 
 from experimental import run_unsloth, run_llama
-from utilities import parse_gemma_output, build_dataset, build_dataset_with_add
+from utilities import parse_gemma_output, build_dataset, build_dataset_with_add, send_email
 from prompt import SYSTEM_PROMPT
 
 
@@ -115,7 +116,13 @@ def main(backend: str, bit: Optional[int], dataset: str, add: bool = False,):
     else:
         pipe = 'http://localhost:8080/v1/chat/completions'
 
-    evaluate(dataset, pipe)
+    try:
+        evaluate(dataset, pipe)
+    except Exception:
+        send_email(f"[FAILED]", traceback.format_exc())
+        raise
+    else:
+        send_email(f"[COMPLETED]", "Experiment finished successfully.")
 
 
 if __name__ == '__main__':

@@ -1,6 +1,9 @@
 import pandas as pd
 from textwrap import dedent
 import json
+import smtplib
+from email.message import EmailMessage
+from config import MAIL_FROM, MAIL_TO, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD
 
 
 def parse_gemma_output(output: str) -> int:
@@ -117,3 +120,16 @@ def build_dataset(raw_dataset: str | pd.DataFrame) -> pd.DataFrame:
     prompt_dataset = pd.DataFrame(data={'prompt': ehr_prompts, 'label': labels})
 
     return prompt_dataset
+
+
+def send_email(subject: str, body: str):
+    msg = EmailMessage()
+    msg["Subject"] = subject
+    msg["From"] = MAIL_FROM
+    msg["To"] = MAIL_TO
+    msg.set_content(body)
+
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        server.starttls()
+        server.login(SMTP_USER, SMTP_PASSWORD)
+        server.send_message(msg)
