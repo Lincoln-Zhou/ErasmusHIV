@@ -133,3 +133,7 @@ def send_email(subject: str, body: str):
         server.starttls()
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.send_message(msg)
+
+
+if __name__ == '__main__':
+    send_email('Test email', 'this is a test email.')
