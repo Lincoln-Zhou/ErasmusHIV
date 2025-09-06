@@ -130,6 +130,7 @@ def send_email(subject: str, body: str):
     msg.set_content(body)
 
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
+        server.set_debuglevel(1)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASSWORD)
         server.send_message(msg)

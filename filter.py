@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from transformers import AutoTokenizer
+from sklearn.model_selection import train_test_split
 
 
 tokenizer = AutoTokenizer.from_pretrained("openai/gpt-oss-20b")
@@ -22,4 +23,9 @@ std = np.std(df['token_length'])
 
 df = df[(df['token_length'] > mu - 3 * std) & (df['token_length'] < mu + 3 * std)]
 
-df.to_csv('dataset_filtered.csv', index=False)
+df.to_csv('dataset.csv', index=False)
+
+train, test = train_test_split(df, test_size=0.1, stratify=df['flag'], random_state=24)
+
+train.to_csv('train.csv')
+test.to_csv('test.csv')
