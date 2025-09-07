@@ -4,9 +4,10 @@ from transformers import AutoTokenizer
 from sklearn.model_selection import train_test_split
 
 
-tokenizer = AutoTokenizer.from_pretrained("openai/gpt-oss-20b")
-
 df = pd.read_csv('dataset.csv')
+df = df.drop_duplicates(subset='Pseudoniem', keep='first')
+
+tokenizer = AutoTokenizer.from_pretrained("openai/gpt-oss-20b")
 
 enc = tokenizer.batch_encode_plus(
     df["text"].astype(str).tolist(),
