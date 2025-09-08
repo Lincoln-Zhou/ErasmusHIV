@@ -19,10 +19,12 @@ enc = tokenizer.batch_encode_plus(
 
 df['token_length'] = [len(ids) for ids in enc["input_ids"]]
 
-mu = np.mean(df['token_length'])
-std = np.std(df['token_length'])
+lower = df['token_length'].quantile(0.005)
+upper = df['token_length'].quantile(0.995)
 
-df = df[(df['token_length'] > mu - 3 * std) & (df['token_length'] < mu + 3 * std)]
+print(f'Filtering entries with token length < {lower} or > {upper}')
+
+df = df[(df['token_length'] >= lower) & (df['token_length'] <= upper)]
 
 df.to_csv('dataset.csv', index=False)
 
