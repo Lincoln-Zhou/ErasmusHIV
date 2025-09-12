@@ -24,7 +24,7 @@ upper = df['token_length'].quantile(0.995)
 
 print(f'Filtering entries with token length < {lower} or > {upper}')
 
-df = df[(df['token_length'] >= lower) & (df['token_length'] <= upper)]
+df = df[(df['token_length'] > lower) & (df['token_length'] < upper)]
 
 df.to_csv('dataset.csv', index=False)
 
